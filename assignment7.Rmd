@@ -1,0 +1,84 @@
+---
+title: "Assignment7"
+output: 
+  flexdashboard::flex_dashboard:
+    theme:
+      bg: "#101010"
+      fg: "#FDF7F7" 
+      primary: "#ED79F9"
+      base_font:
+        google: Prompt
+      code_font:
+        google: JetBrains Mono
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(DT)
+library(tidyverse)
+library(dplyr)
+# Install thematic and un-comment for themed static plots (i.e., ggplot2)
+# thematic::thematic_rmd()
+```
+
+## Column {.tabset data-width="650"}
+
+### 时序图
+
+```{r}
+## 读取数据
+pub <- read_csv("pub_211.csv")
+## 按照学校对论文发表量求和
+total_sum <- pub %>%
+  group_by(inst_cn) %>%
+  summarize(total_papers = sum(pubnum_wos))
+## 筛选出总发文量排名前5的高校
+top5_schools <- total_sum %>%
+  top_n(5, total_papers)
+## 每年对每所学校求和
+total_school <- pub %>%
+  group_by(inst_cn,pubyear) %>%
+  summarize(total_papers = sum(pubnum_wos))
+## 在原始数据中筛选出排名前5的学校的数据
+university <- total_school %>%
+  filter(inst_cn %in% top5_schools$inst_cn)
+
+# 绘制时序图
+p1 <- ggplot(university, aes(x = pubyear, y = total_papers, color = inst_cn)) +
+  geom_point(shape=21,size=2,fill = 'white',stroke = 1) +
+  labs(title = "总发文量排名前5的高校发表数量趋势",
+       x = "年份",
+       y = "论文总发表数量",
+       color = "学校名称")+
+  theme(text = element_text(family = "SimHei"))
+
+p1
+
+```
+
+### 交互图
+
+```{r}
+p3 = ggplotly(p1)
+p3
+```
+
+## Column {data-width="350"}
+
+### 学校的总发文量
+
+```{r}
+## 按照学校计算pubnum_wos的值
+pub_num_school <- pub %>%
+  group_by(inst_cn) %>%
+  summarise(pubnum_wos = n())
+## 删除包含任何缺失值的行
+pubdata_filtered <- na.omit(pub_num_school)
+## markdown表格的形式
+knitr::kable(pubdata_filtered)
+```
+
